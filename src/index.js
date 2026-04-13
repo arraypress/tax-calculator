@@ -39,6 +39,11 @@
  * @param {import('./index').TaxRate} params.rate - The tax rate to apply.
  * @returns {import('./index').TaxResult} Computed tax breakdown.
  *
+ * Per-line exemptions: if a line item has `taxExempt: true`, it is
+ * excluded from tax computation regardless of product type or appliesTo.
+ * Use this for tax-exempt customers, reseller certificates, or
+ * individual product overrides.
+ *
  * @example
  * // 20% exclusive tax on two items
  * const result = computeTax({
@@ -49,8 +54,18 @@
  *   rate: { rate: 20, taxType: 'exclusive', appliesTo: 'all' },
  * });
  * // result.taxAmount === 2200 (20% of 11000)
- * // result.lineItems[0].taxAmount === 909
- * // result.lineItems[1].taxAmount === 1291 (absorbs remainder)
+ *
+ * @example
+ * // Tax-exempt line item is excluded
+ * const result = computeTax({
+ *   lineItems: [
+ *     { unitAmount: 5000, quantity: 1, productType: 'physical' },
+ *     { unitAmount: 3000, quantity: 1, productType: 'physical', taxExempt: true },
+ *   ],
+ *   rate: { rate: 10, taxType: 'exclusive', appliesTo: 'all' },
+ * });
+ * // result.taxableAmount === 5000 (exempt line excluded)
+ * // result.taxAmount === 500
  *
  * @example
  * // Inclusive tax — nothing added, but breakdown is reported
@@ -79,8 +94,9 @@ export function computeTax({ lineItems, rate }) {
 
   if (!rate || rate.rate <= 0) return result;
 
-  // Determine which lines are taxable based on appliesTo
+  // Determine which lines are taxable based on appliesTo + per-line exemptions
   const isTaxable = (li) => {
+    if (li.taxExempt) return false;
     if (rate.appliesTo === 'physical' && li.productType !== 'physical') return false;
     if (rate.appliesTo === 'digital' && li.productType === 'physical') return false;
     return true;

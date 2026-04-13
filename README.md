@@ -43,6 +43,20 @@ Compute tax for a set of line items given a rate. Pure function — does not mut
 - `'physical'` — only `productType === 'physical'` lines
 - `'digital'` — only non-physical lines
 
+**Per-line exemptions:** Set `taxExempt: true` on any line item to exclude it from tax regardless of product type or `appliesTo`. Use for tax-exempt customers, reseller certificates, or individual product overrides.
+
+```javascript
+computeTax({
+  lineItems: [
+    { unitAmount: 5000, quantity: 1, productType: 'physical' },
+    { unitAmount: 3000, quantity: 1, productType: 'physical', taxExempt: true },
+  ],
+  rate: { rate: 10, taxType: 'exclusive', appliesTo: 'all' },
+});
+// taxableAmount: 5000 (exempt line excluded)
+// taxAmount: 500
+```
+
 **Returns** `TaxResult`:
 - `taxAmount` — tax to add (0 for inclusive)
 - `inclusiveTaxAmount` — tax embedded in price (0 for exclusive)

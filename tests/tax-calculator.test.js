@@ -119,6 +119,56 @@ describe('computeTax', () => {
     assert.strictEqual(result.taxableAmount, 0);
   });
 
+  it('taxExempt line is excluded from tax', () => {
+    const result = computeTax({
+      lineItems: [
+        { unitAmount: 5000, quantity: 1, productType: 'physical' },
+        { unitAmount: 3000, quantity: 1, productType: 'physical', taxExempt: true },
+      ],
+      rate: { rate: 10, taxType: 'exclusive', appliesTo: 'all' },
+    });
+    assert.strictEqual(result.taxableAmount, 5000);
+    assert.strictEqual(result.taxAmount, 500);
+    assert.strictEqual(result.lineItems[0].taxRate, 10);
+    assert.strictEqual(result.lineItems[1].taxRate, 0);
+    assert.strictEqual(result.lineItems[1].taxAmount, 0);
+  });
+
+  it('all lines exempt returns zero tax', () => {
+    const result = computeTax({
+      lineItems: [
+        { unitAmount: 5000, quantity: 1, productType: 'physical', taxExempt: true },
+        { unitAmount: 3000, quantity: 1, productType: 'digital', taxExempt: true },
+      ],
+      rate: { rate: 20, taxType: 'exclusive', appliesTo: 'all' },
+    });
+    assert.strictEqual(result.taxAmount, 0);
+    assert.strictEqual(result.taxableAmount, 0);
+  });
+
+  it('taxExempt works with inclusive mode', () => {
+    const result = computeTax({
+      lineItems: [
+        { unitAmount: 12000, quantity: 1, productType: 'digital' },
+        { unitAmount: 6000, quantity: 1, productType: 'digital', taxExempt: true },
+      ],
+      rate: { rate: 20, taxType: 'inclusive', appliesTo: 'all' },
+    });
+    assert.strictEqual(result.taxAmount, 0);
+    assert.strictEqual(result.inclusiveTaxAmount, 2000); // only the 12000 line
+    assert.strictEqual(result.taxableAmount, 12000);
+  });
+
+  it('taxExempt takes priority over appliesTo', () => {
+    const result = computeTax({
+      lineItems: [
+        { unitAmount: 5000, quantity: 1, productType: 'physical', taxExempt: true },
+      ],
+      rate: { rate: 10, taxType: 'exclusive', appliesTo: 'physical' },
+    });
+    assert.strictEqual(result.taxAmount, 0);
+  });
+
   it('does not mutate input line items', () => {
     const original = [{ unitAmount: 5000, quantity: 1, productType: 'physical' }];
     computeTax({ lineItems: original, rate: { rate: 10, taxType: 'exclusive', appliesTo: 'all' } });

@@ -6,6 +6,8 @@ export interface TaxLineItem {
   quantity: number;
   /** Product type for applies_to filtering: 'physical', 'digital', 'bundle', etc. */
   productType: string;
+  /** When true, this line is exempt from tax regardless of rate or product type. */
+  taxExempt?: boolean;
   /** Tax amount allocated to this line (set by computeTax). */
   taxAmount?: number;
   /** Tax rate percentage applied to this line (set by computeTax). */
